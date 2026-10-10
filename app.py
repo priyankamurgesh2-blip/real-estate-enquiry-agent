@@ -280,22 +280,52 @@ with right:
 
     if send_question and question.strip():
         question = question.strip()
-        st.session_state.chat_history.append({"role":"user","content":question})
-        q = question.lower()
-        requested_type = next((t for t in ["1bhk","2bhk","3bhk","villa","plot"] if t in q), None)
+        st.session_state.chat_history.append({"role": "user", "content": question})
+        q = question.lower().replace("₹", " ").replace(",", " ")
+
+        # Understand English and common Telugu-in-English (transliterated) phrases.
+        type_aliases = {
+            "1bhk": ["1bhk", "1 bhk", "one bhk", "1 bedroom", "one bedroom", "oka bhk", "1 bed room"],
+            "2bhk": ["2bhk", "2 bhk", "two bhk", "2 bedroom", "two bedroom", "rendu bhk", "2 bed room"],
+            "3bhk": ["3bhk", "3 bhk", "three bhk", "3 bedroom", "three bedroom", "moodu bhk", "3 bed room"],
+            "Villa": ["villa", "villas", "independent house", "separate house", "illuu", "illu", "house"],
+            "Plot": ["plot", "land", "open plot", "place to build"]
+        }
+        requested_type = next((kind for kind, aliases in type_aliases.items() if any(alias in q for alias in aliases)), None)
+
         requested_location = next((p["location"] for p in PROPERTIES if p["location"].lower() in q), None)
-        numbers = re.findall(r"\d+", q)
-        max_price = int(numbers[-1]) if numbers and any(word in q for word in ["under","below","within","less than","budget"]) else None
-        matches = [p for p in PROPERTIES if (not requested_type or p["type"].lower() == requested_type) and (not requested_location or p["location"].lower() == requested_location.lower()) and (max_price is None or p["price"] <= max_price)]
+        # Common location phrasing such as "Vijayawada lo" is covered by substring matching.
+        number_matches = re.findall(r"\d+(?:\.\d+)?", q)
+        budget_words = ["under", "below", "within", "less than", "budget", "lakhs", "lakh", "lo", "lopu", "varaku", "less", "cheap", "affordable", "takkuva", "budget lo"]
+        max_price = None
+        if number_matches and any(word in q for word in budget_words):
+            # Avoid treating a bedroom count (1/2/3) as the budget when another amount exists.
+            amounts = [float(n) for n in number_matches if float(n) not in (1, 2, 3) or any(w in q for w in ["lakh", "lakhs", "budget", "under", "below", "within", "lo", "lopu", "varaku"])]
+            if amounts:
+                max_price = amounts[-1]
+
+        matches = [p for p in PROPERTIES
+                   if (not requested_type or p["type"].lower() == requested_type.lower())
+                   and (not requested_location or p["location"].lower() == requested_location.lower())
+                   and (max_price is None or p["price"] <= max_price)]
+
+        telugu_style = any(word in q for word in ["kavali", "kavali", "cheppu", "chupinchu", "undi", "lo", "naaku", "naku", "manchi", "takkuva", "entha", "ekkada", "ledu", "ivvu"])
         if matches:
-            reply = "Here are matching fictional demo listings:\n\n" + "\n".join([f"- {p['name']}: {p['type']} in {p['location']}, ₹{p['price']} lakhs" for p in matches]) + "\n\nThese are demo examples, not verified properties."
+            listing_lines = [f"- {p['name']}: {p['type']} in {p['location']} — ₹{p['price']} lakhs" for p in matches]
+            if telugu_style:
+                reply = "Mee requirements ki match ayye sample properties ఇవి / Here are matching sample properties:\n\n" + "\n".join(listing_lines) + "\n\nIvi demo examples maatrame; verified properties kaavu. These are fictional examples, not verified listings."
+            else:
+                reply = "Here are matching fictional demo listings:\n\n" + "\n".join(listing_lines) + "\n\nThese are demo examples, not verified properties."
         else:
-            reply = "I couldn't find a matching sample listing. Try: “2BHK in Vijayawada under 40 lakhs.”"
-        st.session_state.chat_history.append({"role":"assistant","content":reply})
+            if telugu_style:
+                reply = "Ee requirements ki matching sample property dorakaledu. Vere location/budget try cheyyandi. Example: ‘2BHK Vijayawada lo 40 lakhs lopu kavali’.\n\nI couldn't find a matching demo listing; try changing the type, location, or budget."
+            else:
+                reply = "I couldn't find a matching sample listing. Try: ‘2BHK in Vijayawada under 40 lakhs.’"
+        st.session_state.chat_history.append({"role": "assistant", "content": reply})
         st.session_state.chat_draft = ""
         st.rerun()
     elif send_question:
-        st.warning("Please type a question first.")
+        st.warning("Please type a question first / Dayachesi question type cheyyandi.")
 
 st.divider()
 st.markdown('<div class="footer">ESTATEMATE · REAL ESTATE ENQUIRY DEMO<br>All listings and prices are fictional examples. No enquiries are sent to a real estate agent.</div>', unsafe_allow_html=True)
