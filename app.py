@@ -68,6 +68,18 @@ div[data-testid="stChatInput"] {
     border: 1px solid #b8d5c4 !important;
     border-radius: 14px !important;
 }
+div[data-testid="stForm"] input {
+    color: #142b27 !important;
+    -webkit-text-fill-color: #142b27 !important;
+    background: #ffffff !important;
+    caret-color: #176b52 !important;
+    opacity: 1 !important;
+}
+div[data-testid="stForm"] input::placeholder {
+    color: #65756f !important;
+    -webkit-text-fill-color: #65756f !important;
+    opacity: 1 !important;
+}
 
 
 /* Make chat messages readable without clicking */
@@ -188,8 +200,24 @@ with right:
     for message in st.session_state.chat_history:
         with st.chat_message(message["role"]):
             st.write(message["content"])
-    question = st.chat_input("Ask about sample properties...")
-    if question:
+    # Use a standard text input instead of st.chat_input so typed letters stay visible.
+    if "chat_draft" not in st.session_state:
+        st.session_state.chat_draft = ""
+
+    with st.form("property_chat_form", clear_on_submit=True):
+        chat_col, send_col = st.columns([5, 1])
+        with chat_col:
+            question = st.text_input(
+                "Type your question here",
+                key="chat_draft",
+                placeholder="e.g. 2BHK in Vijayawada under 40 lakhs",
+                label_visibility="collapsed",
+            )
+        with send_col:
+            send_question = st.form_submit_button("Send", use_container_width=True)
+
+    if send_question and question.strip():
+        question = question.strip()
         st.session_state.chat_history.append({"role":"user","content":question})
         q = question.lower()
         requested_type = next((t for t in ["1bhk","2bhk","3bhk","villa","plot"] if t in q), None)
@@ -202,7 +230,10 @@ with right:
         else:
             reply = "I couldn't find a matching sample listing. Try: “2BHK in Vijayawada under 40 lakhs.”"
         st.session_state.chat_history.append({"role":"assistant","content":reply})
+        st.session_state.chat_draft = ""
         st.rerun()
+    elif send_question:
+        st.warning("Please type a question first.")
 
 st.divider()
 st.markdown('<div class="footer">ESTATEMATE · REAL ESTATE ENQUIRY DEMO<br>All listings and prices are fictional examples. No enquiries are sent to a real estate agent.</div>', unsafe_allow_html=True)
