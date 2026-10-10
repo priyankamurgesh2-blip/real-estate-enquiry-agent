@@ -48,6 +48,28 @@ div[data-testid="stForm"] { background:white; border:1px solid #e1ebe5; padding:
 .stButton > button:hover, div[data-testid="stFormSubmitButton"] button:hover { background:#104d3c; color:white; }
 input, textarea, [data-baseweb="select"] > div { border-radius:10px !important; }
 
+/* Keep typed chat text visible before pressing Send */
+div[data-testid="stChatInput"] textarea,
+div[data-testid="stChatInput"] input {
+    color: #142b27 !important;
+    -webkit-text-fill-color: #142b27 !important;
+    background-color: #ffffff !important;
+    caret-color: #176b52 !important;
+    opacity: 1 !important;
+}
+div[data-testid="stChatInput"] textarea::placeholder,
+div[data-testid="stChatInput"] input::placeholder {
+    color: #65756f !important;
+    -webkit-text-fill-color: #65756f !important;
+    opacity: 1 !important;
+}
+div[data-testid="stChatInput"] {
+    background-color: #ffffff !important;
+    border: 1px solid #b8d5c4 !important;
+    border-radius: 14px !important;
+}
+
+
 /* Make chat messages readable without clicking */
 div[data-testid="stChatMessage"] {
     background: #ffffff !important;
