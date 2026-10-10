@@ -322,7 +322,7 @@ with right:
             else:
                 reply = "I couldn't find a matching sample listing. Try: ‘2BHK in Vijayawada under 40 lakhs.’"
         st.session_state.chat_history.append({"role": "assistant", "content": reply})
-        st.session_state.chat_draft = ""
+        # clear_on_submit=True clears the form without modifying widget state here.
         st.rerun()
     elif send_question:
         st.warning("Please type a question first / Dayachesi question type cheyyandi.")
