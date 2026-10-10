@@ -1,7 +1,10 @@
 
 
 import streamlit as st
+import streamlit.components.v1 as components
+from streamlit_mic_recorder import speech_to_text
 import re
+import json
 
 st.set_page_config(
     page_title="EstateMate | Property Finder",
@@ -197,12 +200,71 @@ with right:
     st.markdown('<div class="info-card">💬 Ask about property type, location, or maximum budget. Replies use fictional demo listings.</div>', unsafe_allow_html=True)
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
-    for message in st.session_state.chat_history:
+    for msg_index, message in enumerate(st.session_state.chat_history):
         with st.chat_message(message["role"]):
             st.write(message["content"])
-    # Use a standard text input instead of st.chat_input so typed letters stay visible.
+            if message["role"] == "assistant":
+                spoken_text = json.dumps(message["content"], ensure_ascii=False)
+                voice_locale = "te-IN" if any("\u0c00" <= ch <= "\u0c7f" for ch in message["content"]) else "en-IN"
+                voice_html = f"""
+                <div style="font-family:Arial,sans-serif;margin:4px 0 8px;">
+                  <button id="speak-{msg_index}" style="background:#176b52;color:white;border:0;border-radius:10px;padding:9px 13px;font-size:14px;cursor:pointer;">
+                    🔊 Read answer aloud
+                  </button>
+                  <button id="stop-{msg_index}" style="background:#eaf5ef;color:#142b27;border:1px solid #c9dfd1;border-radius:10px;padding:9px 13px;font-size:14px;cursor:pointer;margin-left:6px;">
+                    ⏹ Stop
+                  </button>
+                  <span id="status-{msg_index}" style="color:#43574f;font-size:12px;margin-left:6px;"></span>
+                </div>
+                <script>
+                const answerText = {spoken_text};
+                const lang = "{voice_locale}";
+                const speakBtn = document.getElementById("speak-{msg_index}");
+                const stopBtn = document.getElementById("stop-{msg_index}");
+                speakBtn.onclick = () => {{
+                  if (!("speechSynthesis" in window)) {{
+                    document.getElementById("status-{msg_index}").textContent = "Speech playback is not supported in this browser.";
+                    return;
+                  }}
+                  window.speechSynthesis.cancel();
+                  const utterance = new SpeechSynthesisUtterance(answerText);
+                  utterance.lang = lang;
+                  utterance.rate = 0.9;
+                  utterance.onstart = () => document.getElementById("status-{msg_index}").textContent = "Speaking…";
+                  utterance.onend = () => document.getElementById("status-{msg_index}").textContent = "";
+                  window.speechSynthesis.speak(utterance);
+                }};
+                stopBtn.onclick = () => {{ window.speechSynthesis.cancel(); document.getElementById("status-{msg_index}").textContent = ""; }};
+                </script>
+                """
+                components.html(voice_html, height=58)
+    # Voice language and microphone input (browser speech recognition).
     if "chat_draft" not in st.session_state:
         st.session_state.chat_draft = ""
+
+    voice_language = st.selectbox(
+        "Voice language / మాట్లాడే భాష",
+        options=["Telugu (తెలుగు)", "English"],
+        key="voice_language_choice",
+    )
+    speech_lang = "te-IN" if voice_language.startswith("Telugu") else "en-IN"
+    st.caption("🎤 Tap Start speaking, allow microphone access, speak, then review the text before sending.")
+
+    try:
+        transcript = speech_to_text(
+            language=speech_lang,
+            start_prompt="🎤 Start speaking",
+            stop_prompt="⏹️ Stop",
+            just_once=True,
+            use_container_width=True,
+            key=f"estate_mate_stt_{speech_lang}",
+        )
+    except Exception:
+        transcript = None
+        st.info("Voice input is not available in this browser right now. You can type your question below.")
+
+    if transcript and transcript.strip():
+        st.session_state.chat_draft = transcript.strip()
 
     with st.form("property_chat_form", clear_on_submit=True):
         chat_col, send_col = st.columns([5, 1])
