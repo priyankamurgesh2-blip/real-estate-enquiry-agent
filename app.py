@@ -1,4 +1,5 @@
 
+
 import streamlit as st
 import re
 
@@ -46,7 +47,36 @@ div[data-testid="stForm"] { background:white; border:1px solid #e1ebe5; padding:
 .stButton > button, div[data-testid="stFormSubmitButton"] button { border-radius:12px; border:0; background:#176b52; color:white; font-weight:700; padding:.65rem 1rem; }
 .stButton > button:hover, div[data-testid="stFormSubmitButton"] button:hover { background:#104d3c; color:white; }
 input, textarea, [data-baseweb="select"] > div { border-radius:10px !important; }
-div[data-testid="stChatMessage"] { border-radius:16px; }
+
+/* Make chat messages readable without clicking */
+div[data-testid="stChatMessage"] {
+    background: #ffffff !important;
+    border: 1px solid #d9e8df !important;
+    border-radius: 16px !important;
+    padding: 1rem !important;
+    margin: 0.5rem 0 !important;
+    color: #142b27 !important;
+    box-shadow: 0 4px 14px rgba(20,60,45,.06) !important;
+}
+div[data-testid="stChatMessage"] p,
+div[data-testid="stChatMessage"] span,
+div[data-testid="stChatMessage"] div,
+div[data-testid="stChatMessage"] li {
+    color: #142b27 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+div[data-testid="stChatMessage"] [data-testid="stMarkdownContainer"] {
+    color: #142b27 !important;
+    opacity: 1 !important;
+}
+div[data-testid="stChatMessage"] [data-testid="chatAvatarIcon-user"] {
+    background-color: #dcefe4 !important;
+}
+div[data-testid="stChatMessage"] [data-testid="chatAvatarIcon-assistant"] {
+    background-color: #176b52 !important;
+}
+
 .footer { text-align:center; color:#718079; padding:1.5rem .5rem .3rem; font-size:.82rem; }
 hr { border-color:#e4ece7; }
 </style>
